@@ -30,26 +30,47 @@ jobs:
         sudo apt-get update -y
         sudo apt-get install -y build-essential ccache git libncurses5-dev libncursesw5-dev libz-dev libssl-dev libxml2-dev libxslt1-dev libffi-dev libsqlite3-dev libbz2-dev
         sudo apt-get install -y openjdk-11-jdk
-        sudo apt-get install -y zipalign apktool wget unzip
+        sudo apt-get install -y zipalign apktool wget unzip curl
     
-    - name: Create Android SDK directory and accept licenses
+    - name: Set up Android build environment
       run: |
-        # Create SDK directory
+        # Create buildozer directories
+        mkdir -p ~/.buildozer/cache
+        mkdir -p ~/.buildozer/android/platform
         mkdir -p ~/.buildozer/android/platform/android-sdk
         
-        # Download SDK Command Line Tools
+        # Install Apache Ant
+        echo "Installing Apache Ant..."
+        cd ~/.buildozer/android/platform
+        wget -O apache-ant-1.9.16-bin.tar.gz https://archive.apache.org/dist/ant/binaries/apache-ant-1.9.16-bin.tar.gz
+        tar xzf apache-ant-1.9.16-bin.tar.gz
+        mv apache-ant-1.9.16 apache-ant-1.9.4
+        
+        # Install Android NDK
+        echo "Installing Android NDK..."
+        cd ~/.buildozer/android/platform
+        wget -O android-ndk-r25c-linux.zip https://dl.google.com/android/repository/android-ndk-r25c-linux.zip
+        unzip -q android-ndk-r25c-linux.zip
+        mv android-ndk-r25c android-ndk-r25b
+        
+        # Install Android SDK Command Line Tools
+        echo "Installing Android SDK Command Line Tools..."
         cd ~/.buildozer/android/platform/android-sdk
-        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-        unzip commandlinetools-linux-9477386_latest.zip
+        wget -O commandlinetools-linux-11076708_latest.zip https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+        unzip -q commandlinetools-linux-11076708_latest.zip
         
         # Create tools directory structure
         mkdir -p cmdline-tools/latest
         mv cmdline-tools/bin cmdline-tools/lib cmdline-tools/source.properties cmdline-tools/latest/
         
-        # Set SDK path
-        export ANDROID_HOME=~/.buildozer/android/platform/android-sdk
-        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
-        
+        # Set environment variables
+        echo "ANDROID_HOME=~/.buildozer/android/platform/android-sdk" >> $GITHUB_ENV
+        echo "ANDROID_NDK_HOME=~/.buildozer/android/platform/android-ndk-r25b" >> $GITHUB_ENV
+        echo "ANT_HOME=~/.buildozer/android/platform/apache-ant-1.9.4" >> $GITHUB_ENV
+        echo "PATH=$PATH:~/.buildozer/android/platform/apache-ant-1.9.4/bin:~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin:~/.buildozer/android/platform/android-sdk/platform-tools" >> $GITHUB_ENV
+    
+    - name: Accept Android SDK licenses and install components
+      run: |
         # Accept licenses
         echo "Accepting Android SDK licenses..."
         yes | sdkmanager --licenses
@@ -78,8 +99,6 @@ jobs:
     
     - name: Build APK
       run: |
-        export ANDROID_HOME=~/.buildozer/android/platform/android-sdk
-        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
         buildozer android debug --verbose 2>&1 | tee build.log
     
     - name: Check build results
