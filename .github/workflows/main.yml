@@ -42,6 +42,11 @@ jobs:
         echo "=== Java version ==="
         java -version
     
+    - name: Accept Android SDK licenses
+      run: |
+        echo "=== Accepting Android SDK licenses ==="
+        yes | buildozer android update --accept-licenses
+    
     - name: Check project structure
       run: |
         echo "=== Project structure ==="
