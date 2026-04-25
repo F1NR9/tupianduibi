@@ -52,8 +52,8 @@ jobs:
     - name: Build APK
       run: |
         echo "=== Starting build ==="
-        buildozer android debug --verbose
-      continue-on-error: true
+        buildozer android debug --verbose 2>&1 | tee build.log
+        echo "=== Build completed with exit code: $?" >> build.log
     
     - name: Check build results
       run: |
@@ -61,14 +61,16 @@ jobs:
         ls -la
         ls -la bin/ || echo "bin directory not found"
         find . -name "*.apk" -type f || echo "No APK files found"
+        echo "=== Build log ==="
+        cat build.log
         echo "=== Buildozer logs ==="
         find .buildozer -name "*.log" -exec echo "--- {} ---" \; -exec cat {} \; 2>/dev/null || echo "No logs found"
     
-    - name: Upload APK
+    - name: Upload build logs
       uses: actions/upload-artifact@v4
       with:
-        name: jersey-matcher-apk
+        name: build-logs
         path: |
-          bin/*.apk
-          ./*.apk
+          build.log
+          .buildozer/**/*.log
         if-no-files-found: warn
