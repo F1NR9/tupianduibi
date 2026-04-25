@@ -32,13 +32,13 @@ jobs:
         sudo apt-get install -y openjdk-11-jdk
         sudo apt-get install -y zipalign apktool wget unzip
     
-    - name: Manually install Android SDK
+    - name: Create Android SDK directory and accept licenses
       run: |
         # Create SDK directory
-        mkdir -p ~/Android/Sdk
-        cd ~/Android/Sdk
+        mkdir -p ~/.buildozer/android/platform/android-sdk
         
         # Download SDK Command Line Tools
+        cd ~/.buildozer/android/platform/android-sdk
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
         unzip commandlinetools-linux-9477386_latest.zip
         
@@ -47,27 +47,39 @@ jobs:
         mv cmdline-tools/bin cmdline-tools/lib cmdline-tools/source.properties cmdline-tools/latest/
         
         # Set SDK path
-        export ANDROID_HOME=~/Android/Sdk
+        export ANDROID_HOME=~/.buildozer/android/platform/android-sdk
         export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
         
         # Accept licenses
+        echo "Accepting Android SDK licenses..."
         yes | sdkmanager --licenses
         
         # Install required SDK components
+        echo "Installing SDK components..."
         sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0"
     
-    - name: Set Android SDK environment variables
+    - name: Configure buildozer spec
       run: |
-        echo "ANDROID_HOME=~/Android/Sdk" >> $GITHUB_ENV
-        echo "PATH=$PATH:~/Android/Sdk/cmdline-tools/latest/bin:~/Android/Sdk/platform-tools" >> $GITHUB_ENV
-    
-    - name: Check project structure
-      run: |
-        ls -la
-        cat buildozer.spec
+        echo '[app]' > buildozer.spec
+        echo 'title = 球衣款式匹配系统' >> buildozer.spec
+        echo 'package.name = jersey_matcher' >> buildozer.spec
+        echo 'package.domain = org.kivy' >> buildozer.spec
+        echo 'source.dir = .' >> buildozer.spec
+        echo 'source.include_exts = py,png,jpg,kv,atlas' >> buildozer.spec
+        echo 'version = 0.1' >> buildozer.spec
+        echo 'requirements = python3,kivy,opencv,numpy,scikit-learn,faiss-cpu,cython' >> buildozer.spec
+        echo 'orientation = portrait' >> buildozer.spec
+        echo 'fullscreen = 0' >> buildozer.spec
+        echo 'android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, CAMERA' >> buildozer.spec
+        echo 'android.archs = armeabi-v7a' >> buildozer.spec
+        echo '' >> buildozer.spec
+        echo '[buildozer]' >> buildozer.spec
+        echo 'log_level = 2' >> buildozer.spec
     
     - name: Build APK
       run: |
+        export ANDROID_HOME=~/.buildozer/android/platform/android-sdk
+        export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
         buildozer android debug --verbose 2>&1 | tee build.log
     
     - name: Check build results
