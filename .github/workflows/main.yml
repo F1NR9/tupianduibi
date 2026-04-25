@@ -24,47 +24,71 @@ jobs:
     
     - name: Install dependencies
       run: |
+        echo "Updating pip..."
         python -m pip install --upgrade pip
+        echo "Installing buildozer..."
         pip install buildozer
+        echo "Installing cython..."
         pip install cython
+        echo "Checking installed packages..."
+        pip list
     
     - name: Initialize buildozer
-      run: buildozer init
+      run: |
+        echo "Initializing buildozer..."
+        buildozer init
     
     - name: Configure buildozer spec
       run: |
-        echo "title = 球衣款式匹配系统" >> buildozer.spec
-        echo "package.name = jersey_matcher" >> buildozer.spec
-        echo "package.domain = org.kivy" >> buildozer.spec
-        echo "source.dir = ." >> buildozer.spec
-        echo "source.include_exts = py,png,jpg,kv,atlas" >> buildozer.spec
-        echo "version = 0.1" >> buildozer.spec
-        echo "requirements = python3,kivy,opencv,numpy,scikit-learn,faiss-cpu,cython" >> buildozer.spec
-        echo "orientation = portrait" >> buildozer.spec
-        echo "fullscreen = 0" >> buildozer.spec
-        echo "android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, CAMERA" >> buildozer.spec
-        echo "android.archs = armeabi-v7a" >> buildozer.spec
+        echo "Configuring buildozer spec..."
+        cat > buildozer.spec << EOF
+[app]
+title = 球衣款式匹配系统
+package.name = jersey_matcher
+package.domain = org.kivy
+source.dir = .
+source.include_exts = py,png,jpg,kv,atlas
+version = 0.1
+requirements = python3,kivy,opencv,numpy,scikit-learn,faiss-cpu,cython
+orientation = portrait
+fullscreen = 0
+android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, CAMERA
+android.archs = armeabi-v7a
+
+[buildozer]
+log_level = 2
+EOF
+        echo "Generated buildozer.spec:"
         cat buildozer.spec
     
-    - name: Install buildozer dependencies
+    - name: Install system dependencies
       run: |
+        echo "Updating apt..."
         sudo apt-get update
+        echo "Installing build dependencies..."
         sudo apt-get install -y build-essential ccache git libncurses5-dev libncursesw5-dev libz-dev libssl-dev libxml2-dev libxslt1-dev libffi-dev libsqlite3-dev libbz2-dev
+        echo "Installing Java..."
         sudo apt-get install -y openjdk-11-jdk
-        sudo apt-get install -y zipalign
-        sudo apt-get install -y apktool
+        echo "Installing Android tools..."
+        sudo apt-get install -y zipalign apktool
+        echo "Checking Java version..."
         java -version
     
     - name: Build APK
       run: |
-        buildozer android debug --verbose
+        echo "Starting build..."
+        buildozer android debug --verbose || (echo "Build failed, checking logs..." && cat .buildozer/android/platform/build-*/build/outputs/logs/*)
     
     - name: Check build results
       run: |
+        echo "Checking build results..."
+        ls -la || echo "Root directory listing failed"
         ls -la bin/ || echo "bin directory not found"
+        ls -la .buildozer/ || echo ".buildozer directory not found"
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: jersey-matcher-apk
         path: bin/*.apk
+        if-no-files-found: ignore
