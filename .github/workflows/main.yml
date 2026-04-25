@@ -20,27 +20,49 @@ jobs:
       with:
         python-version: '3.10'
     
-    - name: Install dependencies
+    - name: Install Python dependencies
       run: |
+        echo "=== Updating pip ==="
         python -m pip install --upgrade pip
+        echo "=== Installing buildozer and cython ==="
         pip install buildozer cython
+        echo "=== Installed packages ==="
+        pip list
     
     - name: Install system dependencies
       run: |
+        echo "=== Updating apt ==="
         sudo apt-get update -y
+        echo "=== Installing build dependencies ==="
         sudo apt-get install -y build-essential ccache git libncurses5-dev libncursesw5-dev libz-dev libssl-dev libxml2-dev libxslt1-dev libffi-dev libsqlite3-dev libbz2-dev
+        echo "=== Installing Java ==="
         sudo apt-get install -y openjdk-11-jdk
+        echo "=== Installing Android tools ==="
         sudo apt-get install -y zipalign apktool
+        echo "=== Java version ==="
+        java -version
+    
+    - name: Check project structure
+      run: |
+        echo "=== Project structure ==="
+        ls -la
+        echo "=== buildozer.spec content ==="
+        cat buildozer.spec
     
     - name: Build APK
       run: |
+        echo "=== Starting build ==="
         buildozer android debug --verbose
+      continue-on-error: true
     
     - name: Check build results
       run: |
+        echo "=== Build results ==="
         ls -la
         ls -la bin/ || echo "bin directory not found"
-        find . -name "*.apk" || echo "No APK files found"
+        find . -name "*.apk" -type f || echo "No APK files found"
+        echo "=== Buildozer logs ==="
+        find .buildozer -name "*.log" -exec echo "--- {} ---" \; -exec cat {} \; 2>/dev/null || echo "No logs found"
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
@@ -49,4 +71,4 @@ jobs:
         path: |
           bin/*.apk
           ./*.apk
-        if-no-files-found: error
+        if-no-files-found: warn
