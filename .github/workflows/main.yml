@@ -11,9 +11,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     
-    env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-    
     steps:
     - uses: actions/checkout@v4
     
@@ -24,69 +21,21 @@ jobs:
     
     - name: Install dependencies
       run: |
-        echo "Updating pip..."
         python -m pip install --upgrade pip
-        echo "Installing buildozer..."
-        pip install buildozer
-        echo "Installing cython..."
-        pip install cython
-        echo "Checking installed packages..."
-        pip list
-    
-    - name: Initialize buildozer
-      run: |
-        echo "Initializing buildozer..."
-        buildozer init
-    
-    - name: Configure buildozer spec
-      run: |
-        echo "Configuring buildozer spec..."
-        echo '[app]' > buildozer.spec
-        echo 'title = 球衣款式匹配系统' >> buildozer.spec
-        echo 'package.name = jersey_matcher' >> buildozer.spec
-        echo 'package.domain = org.kivy' >> buildozer.spec
-        echo 'source.dir = .' >> buildozer.spec
-        echo 'source.include_exts = py,png,jpg,kv,atlas' >> buildozer.spec
-        echo 'version = 0.1' >> buildozer.spec
-        echo 'requirements = python3,kivy,opencv,numpy,scikit-learn,faiss-cpu,cython' >> buildozer.spec
-        echo 'orientation = portrait' >> buildozer.spec
-        echo 'fullscreen = 0' >> buildozer.spec
-        echo 'android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, CAMERA' >> buildozer.spec
-        echo 'android.archs = armeabi-v7a' >> buildozer.spec
-        echo '' >> buildozer.spec
-        echo '[buildozer]' >> buildozer.spec
-        echo 'log_level = 2' >> buildozer.spec
-        echo "Generated buildozer.spec:"
-        cat buildozer.spec
+        pip install buildozer cython
     
     - name: Install system dependencies
       run: |
-        echo "Updating apt..."
         sudo apt-get update
-        echo "Installing build dependencies..."
         sudo apt-get install -y build-essential ccache git libncurses5-dev libncursesw5-dev libz-dev libssl-dev libxml2-dev libxslt1-dev libffi-dev libsqlite3-dev libbz2-dev
-        echo "Installing Java..."
         sudo apt-get install -y openjdk-11-jdk
-        echo "Installing Android tools..."
         sudo apt-get install -y zipalign apktool
-        echo "Checking Java version..."
-        java -version
     
     - name: Build APK
-      run: |
-        echo "Starting build..."
-        buildozer android debug --verbose || (echo "Build failed, checking logs..." && find .buildozer -name "*.log" -exec cat {} \;)
-    
-    - name: Check build results
-      run: |
-        echo "Checking build results..."
-        ls -la || echo "Root directory listing failed"
-        ls -la bin/ || echo "bin directory not found"
-        ls -la .buildozer/ || echo ".buildozer directory not found"
+      run: buildozer android debug
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: jersey-matcher-apk
         path: bin/*.apk
-        if-no-files-found: ignore
