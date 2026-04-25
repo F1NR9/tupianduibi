@@ -1,0 +1,59 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.7'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install buildozer
+    
+    - name: Initialize buildozer
+      run: buildozer init
+    
+    - name: Configure buildozer spec
+      run: |
+        echo "title = 球衣款式匹配系统" >> buildozer.spec
+        echo "package.name = jersey_matcher" >> buildozer.spec
+        echo "package.domain = org.kivy" >> buildozer.spec
+        echo "source.dir = ." >> buildozer.spec
+        echo "source.include_exts = py,png,jpg,kv,atlas" >> buildozer.spec
+        echo "version = 0.1" >> buildozer.spec
+        echo "requirements = python3,kivy,opencv,numpy,scikit-learn,faiss-cpu,cython" >> buildozer.spec
+        echo "orientation = portrait" >> buildozer.spec
+        echo "fullscreen = 0" >> buildozer.spec
+        echo "android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, CAMERA" >> buildozer.spec
+        echo "android.archs = armeabi-v7a" >> buildozer.spec
+    
+    - name: Install buildozer dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential ccache git libncurses5-dev libncursesw5-dev libz-dev libssl-dev libxml2-dev libxslt1-dev libffi-dev libsqlite3-dev libbz2-dev
+        sudo apt-get install -y openjdk-11-jdk
+        sudo apt-get install -y zipalign
+        sudo apt-get install -y apktool
+    
+    - name: Build APK
+      run: buildozer android debug
+    
+    - name: Upload APK
+      uses: actions/upload-artifact@v3
+      with:
+        name: jersey-matcher-apk
+        path: bin/*.apk
