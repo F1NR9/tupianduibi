@@ -26,6 +26,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install buildozer
+        pip install cython
     
     - name: Initialize buildozer
       run: buildozer init
@@ -43,6 +44,7 @@ jobs:
         echo "fullscreen = 0" >> buildozer.spec
         echo "android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE, CAMERA" >> buildozer.spec
         echo "android.archs = armeabi-v7a" >> buildozer.spec
+        cat buildozer.spec
     
     - name: Install buildozer dependencies
       run: |
@@ -51,9 +53,15 @@ jobs:
         sudo apt-get install -y openjdk-11-jdk
         sudo apt-get install -y zipalign
         sudo apt-get install -y apktool
+        java -version
     
     - name: Build APK
-      run: buildozer android debug
+      run: |
+        buildozer android debug --verbose
+    
+    - name: Check build results
+      run: |
+        ls -la bin/ || echo "bin directory not found"
     
     - name: Upload APK
       uses: actions/upload-artifact@v4
